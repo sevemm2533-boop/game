@@ -1,5 +1,5 @@
 /**
- * Whack-A-Mole - Game Script (Garden Theme with transparent assets)
+ * Whack-A-Mole - Game Script (Garden Theme)
  */
 
 // --- SOUND MANAGER (Web Audio API Synthesizer) ---
@@ -200,76 +200,6 @@ class SoundManager {
 }
 
 const sounds = new SoundManager();
-
-// --- IMAGE BACKGROUND PRE-PROCESSOR (Chroma Key) ---
-const ASSETS = {
-    mole: 'assets/mole.png',
-    bomb: 'assets/bomb.png',
-    moleTransparent: '',
-    bombTransparent: ''
-};
-
-/**
- * Removes background color from an image using HTML5 Canvas.
- * Detects key color at top-left corner and clears matching pixels.
- */
-function removeBackgroundColor(imageSrc, callback, tolerance = 45, isBomb = false) {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        
-        // Remove watermark text for bomb image (clears bottom 12%)
-        if (isBomb) {
-            ctx.clearRect(0, canvas.height * 0.88, canvas.width, canvas.height * 0.12);
-        }
-        
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        
-        // Sample background key color at top-left corner (0,0)
-        const keyR = data[0];
-        const keyG = data[1];
-        const keyB = data[2];
-        
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-            const a = data[i+3];
-            
-            if (a === 0) continue; // Skip already transparent
-            
-            // Calculate distance in RGB space
-            const dist = Math.sqrt(
-                Math.pow(r - keyR, 2) +
-                Math.pow(g - keyG, 2) +
-                Math.pow(b - keyB, 2)
-            );
-            
-            if (dist < tolerance) {
-                data[i+3] = 0; // Set alpha to 0
-            }
-        }
-        
-        ctx.putImageData(imgData, 0, 0);
-        callback(canvas.toDataURL());
-    };
-    img.src = imageSrc;
-}
-
-// Pre-process images immediately on load
-removeBackgroundColor(ASSETS.mole, (dataUrl) => {
-    ASSETS.moleTransparent = dataUrl;
-}, 75, false);
-
-removeBackgroundColor(ASSETS.bomb, (dataUrl) => {
-    ASSETS.bombTransparent = dataUrl;
-}, 25, true);
 
 // --- GAME STATE ---
 const STATE = {
@@ -694,14 +624,14 @@ function spawnMole() {
     // Determine type: 80% Normal, 10% Gold, 10% Bomb
     const rand = Math.random();
     let type = 'normal';
-    let imageSrc = ASSETS.moleTransparent || ASSETS.mole;
+    let imageSrc = 'assets/mole.png';
     
     if (rand < 0.1) {
         type = 'gold';
-        imageSrc = ASSETS.moleTransparent || ASSETS.mole;
+        imageSrc = 'assets/mole.png';
     } else if (rand < 0.2) {
         type = 'bomb';
-        imageSrc = ASSETS.bombTransparent || ASSETS.bomb;
+        imageSrc = 'assets/bomb.png';
     }
 
     const mole = document.createElement('div');
@@ -736,7 +666,7 @@ function spawnMole() {
         }
     }, duration);
 
-    // Whack action (Do NOT call stopPropagation so the toy hammer swing triggers naturally)
+    // Whack action (Bubbles up to document so toy hammer swings naturally)
     mole.addEventListener('mousedown', (e) => {
         if (!STATE.isPlaying || STATE.isPaused || mole.dataset.whacked === 'true') return;
 
